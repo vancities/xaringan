@@ -91,13 +91,32 @@ moon_reader = function(
     '(%s)(%d);', pkg_file('js/countdown.js'), countdown
   )
 
+
+  if (isTRUE(progbar <- nature[['progressbar']])){
+    progbar_js = 'slideNumberFormat: (current, total) => `
+        <div class="progress-bar-container">
+          <div class="progress-bar" style="width: ${current/total*100}%">
+          </div>
+        </div>
+      `'
+  }
+  else {
+    progbar_js = ''
+  }
+
   if (is.null(title_cls <- nature[['titleSlideClass']]))
     title_cls = c('center', 'middle', 'inverse')
   title_cls = paste(c(title_cls, 'title-slide'), collapse = ", ")
 
   before = nature[['beforeInit']]
-  for (i in c('countdown', 'autoplay', 'beforeInit', "titleSlideClass")) nature[[i]] = NULL
+  for (i in c('countdown', 'autoplay', 'beforeInit', "titleSlideClass", 'progressbar')) nature[[i]] = NULL
 
+  remark_config = if (length(nature)) xfun::tojson(nature) else ''
+
+  remark_config = stringr::str_sub(remark_config, 1, stringr::str_length(remark_config) - 2)
+
+  remark_config_2 = paste0(remark_config, ",\n", progbar_js,"\n}")
+ 
   write_utf8(as.character(tagList(
     tags$script(src = chakra),
     if (is.character(before)) if (self_contained) {
@@ -106,7 +125,7 @@ moon_reader = function(
       lapply(before, function(s) tags$script(src = s))
     },
     tags$script(HTML(paste(c(sprintf(
-      'var slideshow = remark.create(%s);', if (length(nature)) xfun::tojson(nature) else ''
+      'var slideshow = remark.create(%s);', remark_config_2
     ), pkg_file('js/show-widgets.js'), pkg_file('js/print-css.js'),
     play_js, countdown_js), collapse = '\n')))
   )), tmp_js)
